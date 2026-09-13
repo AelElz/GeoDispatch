@@ -1,0 +1,777 @@
+/* Top bar — Figma 6:14 (logo) + 60:2 (header controls).
+   Frame 18 geometry: bar h=96, logo 172x48 at x=28/y=24, controls start at
+   x=248 (so a 48px gap after the logo), h=44, gap 16, right edge x=1896 —
+   a 24px inset from the right. Built fluid: only the logo is a fixed width. */
+
+.gd-topbar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--gd-topbar-h, 96px);
+  padding: 0 24px 0 28px;
+  background: var(--gd-frame);
+  font-family: var(--gd-font);
+}
+
+/* ── Logo (6:14) ─────────────────────────────────────────────── */
+
+.gd-logo {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  height: 48px;
+}
+
+/* One asset, drawn in currentColor: mark and wordmark together, text
+   outlined. The mark's ring edges sit at the product's own zone thresholds —
+   33%, 66% and 100% of the radius — and every ring is the wordmark's stem
+   weight. Source and build script: design/logo/. */
+.gd-logo__lockup {
+  display: block;
+  width: 172px;
+  color: var(--gd-frame-ink, var(--gd-ink, #17212b));
+}
+
+.gd-logo__lockup svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ── Header controls (60:2) ──────────────────────────────────── */
+
+.gd-controls {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--gd-gap, 16px);
+  min-width: 0;
+  height: var(--gd-control-h, 44px);
+}
+
+/* ── Location selector (60:3) ────────────────────────────────── */
+
+.gd-location {
+  position: relative;
+  flex: 0 0 240px;
+  width: 240px;
+  height: var(--gd-control-h, 44px);
+}
+
+.gd-location__trigger {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--gd-radius-control, 10px);
+  background: var(--gd-frame-field);
+  color: var(--gd-frame-ink-2);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  text-align: left;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.gd-location__trigger:hover,
+.gd-location__trigger.is-open {
+  background: var(--gd-frame-field-hover);
+}
+
+.gd-location__trigger:focus-visible {
+  outline: 2px solid var(--gd-frame-ink);
+  outline-offset: 2px;
+}
+
+/* The pin is now an inlined 24-grid SVG, so the box is a plain 18x18 square
+   with both dimensions set and the glyph filling it — no negative offsets to
+   compensate for a hand-trimmed export. `color` is inherited from the trigger,
+   which is what the icon's currentColor stroke resolves against. */
+.gd-location__pin {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+
+.gd-location__pin svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gd-location__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The resolving state is stated and dimmed without changing type style. */
+.gd-location__trigger.is-busy .gd-location__label {
+  opacity: 0.7;
+}
+
+.gd-location__chevron {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+
+.gd-location__chevron svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Location dropdown ───────────────────────────────────────── */
+
+.gd-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  box-sizing: border-box;
+  width: 268px;
+  max-height: 360px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--gd-hairline-strong);
+  border-radius: 12px;
+  background: var(--gd-surface, #ffffff);
+  box-shadow: 0 12px 32px rgba(23, 33, 43, 0.14);
+}
+
+.gd-menu__item {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gd-ink, #17212b);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gd-menu__item:hover {
+  background: var(--gd-field, #f6f7f9);
+}
+
+.gd-menu__item:focus-visible {
+  outline: 2px solid var(--gd-ink, #17212b);
+  outline-offset: -2px;
+}
+
+.gd-menu__item[aria-current='true'] {
+  background: var(--gd-field, #f6f7f9);
+  font-weight: 700;
+}
+
+.gd-menu__divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--gd-hairline-strong);
+}
+
+/* Place search at the top of the menu: "new y" → New York. */
+.gd-menu {
+  width: 320px;
+  max-height: 460px;
+}
+
+.gd-menu__search {
+  position: sticky;
+  top: -6px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -6px -6px 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gd-hairline-strong);
+  background: var(--gd-surface, #ffffff);
+}
+
+.gd-menu__search-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--gd-ink-3, #5b6573);
+}
+
+.gd-menu__search-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gd-menu__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--gd-ink, #17212b);
+  font: inherit;
+  font-size: 15px;
+}
+
+.gd-menu__input::placeholder {
+  color: var(--gd-ink-4, #8a93a0);
+}
+
+.gd-menu__places {
+  padding-top: 6px;
+}
+
+.gd-menu__place {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gd-ink, #17212b);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gd-menu__place:hover,
+.gd-menu__place:first-of-type {
+  background: var(--gd-field, #f6f7f9);
+}
+
+.gd-menu__place:focus-visible {
+  outline: 2px solid var(--gd-ink, #17212b);
+  outline-offset: -2px;
+}
+
+.gd-menu__place-name {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.gd-menu__place-sub {
+  overflow: hidden;
+  color: var(--gd-ink-3, #5b6573);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gd-menu__hint {
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--gd-ink-3, #5b6573);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.gd-menu__credit {
+  margin: 4px 0 0;
+  padding: 0 12px 4px;
+  color: var(--gd-ink-4, #8a93a0);
+  font-size: 11px;
+  line-height: 14px;
+}
+
+/* ── Search (60:4) ───────────────────────────────────────────── */
+
+.gd-search {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  min-width: 0;
+  height: var(--gd-control-h, 44px);
+  padding: 0 16px;
+  border-radius: var(--gd-radius-control, 10px);
+  background: var(--gd-frame-field);
+}
+
+.gd-search:focus-within {
+  outline: 2px solid var(--gd-frame-ink);
+  outline-offset: 2px;
+}
+
+.gd-search__icon {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: var(--gd-frame-ink-2);
+}
+
+.gd-search__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The magnifier belongs to the field: once the operator is typing in it, the
+   glyph darkens with the text rather than staying a placeholder grey. */
+.gd-search:focus-within .gd-search__icon {
+  color: var(--gd-frame-ink);
+}
+
+.gd-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gd-frame-ink);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  outline: none;
+  appearance: none;
+}
+
+.gd-search__input::placeholder {
+  color: var(--gd-frame-ink-3);
+  opacity: 1;
+}
+
+.gd-search__input::-webkit-search-cancel-button,
+.gd-search__input::-webkit-search-decoration {
+  appearance: none;
+  display: none;
+}
+
+/* ── Search results ──────────────────────────────────────────── */
+
+.gd-results {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  max-height: 380px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--gd-hairline-strong);
+  border-radius: 12px;
+  background: var(--gd-surface, #ffffff);
+  box-shadow: 0 12px 32px rgba(23, 33, 43, 0.14);
+}
+
+.gd-results__item {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gd-results__item:hover {
+  background: var(--gd-field, #f6f7f9);
+}
+
+.gd-results__item:focus-visible {
+  outline: 2px solid var(--gd-ink, #17212b);
+  outline-offset: -2px;
+}
+
+.gd-results__label {
+  flex: 0 0 auto;
+  color: var(--gd-ink, #17212b);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  white-space: nowrap;
+}
+
+.gd-results__sub {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--gd-ink-3, #525e6b);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gd-results__zone {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.gd-results__dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.gd-results__empty {
+  margin: 0;
+  padding: 12px;
+  color: var(--gd-ink-3, #525e6b);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+/* ── Notifications (62:2) ────────────────────────────────────── */
+
+/* The plate used to be baked into the exported SVG, along with a drop shadow
+   and an empty clip path that made the bell vanish entirely. The asset is now
+   just the glyph, so the button carries its own surface. */
+.gd-notifications {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--gd-radius-control, 10px);
+  background: var(--gd-frame-field);
+  color: var(--gd-frame-ink-2);
+  cursor: pointer;
+}
+
+/* The bell keeps its 20x22 slot inside the 44x44 button. The glyph is drawn on
+   the shared 24x24 grid, so it scales down to fit that slot and centres in it
+   rather than being stretched to a non-square box. */
+.gd-notifications__icon {
+  display: block;
+  width: 20px;
+  height: 22px;
+}
+
+.gd-notifications__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hover and open now move the glyph as well as the plate, because the inlined
+   SVG inherits `color` — that is the point of the currentColor conversion. */
+.gd-notifications:hover {
+  background: var(--gd-frame-field-hover);
+  color: var(--gd-frame-ink);
+}
+
+.gd-notifications:focus-visible {
+  outline: 2px solid var(--gd-frame-ink);
+  outline-offset: 2px;
+}
+
+/* Counts on the bar. A red pill in Light and Dark; a white pill with a red
+   figure in Dark blue — red on the #001DF3 band vibrates and fails contrast. */
+.gd-notifications__badge {
+  position: absolute;
+  top: 4px;
+  right: 3px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid var(--gd-frame);
+  border-radius: 9px;
+  background: var(--gd-frame-badge);
+  color: var(--gd-frame-badge-ink);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Account ─────────────────────────────────────────────────
+   Replaces the Sign in / Get Started pair. Nobody reaches this console
+   without a station account, so the corner's job is to say WHICH station,
+   not to offer a way in. It is a button because it opens the station profile,
+   and it carries the same field fill every other header control uses so the
+   row still reads as one set of controls. */
+
+.gd-account {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  max-width: 260px;
+  height: var(--gd-control-h, 44px);
+  margin: 0;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--gd-radius-control, 10px);
+  background: var(--gd-frame-field);
+  color: var(--gd-frame-ink-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.gd-account:hover {
+  background: var(--gd-frame-field-hover);
+  color: var(--gd-frame-ink);
+}
+
+.gd-account:focus-visible {
+  outline: 2px solid var(--gd-frame-ink);
+  outline-offset: 2px;
+}
+
+.gd-account__icon {
+  display: flex;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: inherit;
+}
+
+.gd-account__icon svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+/* Name over badge, both single-line: Moroccan names and a station code are
+   both longer than the corner has room for. */
+.gd-account__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.gd-account__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--gd-frame-ink);
+}
+
+.gd-account__badge {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--gd-frame-ink-3);
+}
+
+/* ── Launch incident ─────────────────────────────────────────
+   The only filled button on the bar, and the only control on it that sends
+   anything. Its weight is the affordance: a dispatcher scanning this row for
+   "how do I start an event" should land on it without reading. */
+
+.gd-launch {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  height: var(--gd-control-h, 44px);
+  margin: 0;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--gd-radius-control, 10px);
+  background: var(--gd-frame-primary);
+  color: var(--gd-frame-primary-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.gd-launch:hover {
+  background: var(--gd-frame-primary-hover);
+}
+
+.gd-launch:focus-visible {
+  outline: 2px solid var(--gd-frame-ink);
+  outline-offset: 2px;
+}
+
+/* A drawn plus rather than an icon file: it is a glyph, it has to sit on the
+   text baseline, and no 24px stroke icon in the set is a plus. */
+.gd-launch__plus {
+  display: block;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 19px;
+}
+
+/* ── Stop simulation ─────────────────────────────────────────
+   Shown only while a browser simulation is on the board. The demo amber the
+   simulation wears everywhere, so it can never be mistaken for a control
+   that stops a real incident. */
+
+.gd-stop-sim {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  height: var(--gd-control-h, 44px);
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--gd-radius-control, 10px);
+  background: var(--gd-demo-fill);
+  box-shadow: inset 0 0 0 1px rgba(255, 165, 31, 0.7);
+  color: var(--gd-ink, #17212b);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: box-shadow 120ms ease;
+}
+
+.gd-stop-sim:hover {
+  box-shadow: inset 0 0 0 2px rgba(255, 165, 31, 0.95);
+}
+
+.gd-stop-sim:focus-visible {
+  outline: 2px solid var(--gd-ink, #17212b);
+  outline-offset: 2px;
+}
+
+/* A drawn stop square: a glyph, not an icon file. */
+.gd-stop-sim__icon {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+/* Run: the same amber control once stopped, with a play triangle drawn from
+   borders — quieter than Stop, since nothing is running yet. */
+.gd-stop-sim--run {
+  box-shadow: inset 0 0 0 1px rgba(255, 165, 31, 0.45);
+  font-weight: 500;
+}
+
+.gd-run-sim__icon {
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid currentColor;
+}
+
+/* ── Notifications ───────────────────────────────────────────
+   Open state now means "the telemetry drawer is showing", not "a popover is
+   hanging under this button". */
+
+.gd-notifications.is-open {
+  background: var(--gd-frame-field-hover);
+  color: var(--gd-frame-ink);
+}
+
+/* ── Narrower consoles ───────────────────────────────────────── */
+
+@media (max-width: 1280px) {
+  .gd-topbar {
+    gap: 24px;
+    padding-right: 16px;
+  }
+
+  .gd-location {
+    flex-basis: 200px;
+    width: 200px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .gd-logo__lockup {
+    width: 132px;
+  }
+}
+
+/* The station name is the first thing to go when the row runs out of room —
+   later than the old Sign in button did, because the account control replaced
+   two buttons with one. The icon still identifies it and the accessible name
+   still carries the station, so nothing is lost to a screen reader. */
+@media (max-width: 1180px) {
+  /* The plus alone still reads as "new", and the dialog it opens is titled. */
+  .gd-launch__label {
+    display: none;
+  }
+
+  .gd-launch {
+    padding: 0 14px;
+  }
+}
+
+@media (max-width: 880px) {
+  .gd-account__text {
+    display: none;
+  }
+
+  .gd-account {
+    padding: 0 12px;
+  }
+}

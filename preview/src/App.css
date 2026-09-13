@@ -1,0 +1,980 @@
+/* ============================================================================
+   GeoDispatch — application shell.
+
+   ONLY the three regions of Frame 18 and the map's Leaflet overrides live
+   here. Every component (top bar, rail, details cards, map toolbar) owns its
+   own CSS file and imports it itself.
+
+       +-----------------------------------------------------------+
+       | .app-topbar        96px, white, full width                 |
+       +--------+--------------------------------------------------+
+       | .app-  | .app-map     rounded 16px at the top-left corner  |
+       | rail   |   .map-overlay--*   24px in from every edge       |
+       | 80px   |                                                   |
+       +--------+--------------------------------------------------+
+
+   The frame is 1920x1080 in Figma but is built fluid: the rail and the top
+   bar are the only fixed tracks, the map takes whatever is left.
+
+   Expected markup:
+
+       <div class="app-shell">
+         <header class="app-topbar"> ...TopBar... </header>
+         <nav    class="app-rail">   ...NavRail... </nav>
+         <main   class="app-map">
+           <DisasterMap />                                (.map-canvas)
+           <aside class="map-overlay map-overlay--panel"> ...cards...  </aside>
+           <div   class="map-overlay map-overlay--aside"> ...Hide...   </div>
+           <div   class="map-overlay map-overlay--tr">    ...toolbar... </div>
+         </main>
+       </div>
+   ========================================================================= */
+
+/* ── Shell ───────────────────────────────────────────────────────────────── */
+
+.app-shell {
+  /* The Figma console was composed at 1920px. A compact 75% presentation is
+     the default, with 90/100/110% available in Settings → Display. Expanding
+     the logical canvas by the inverse keeps the scaled shell edge-to-edge —
+     it behaves like page zoom rather than shrinking into the top-left. */
+  --gd-interface-scale: 0.75;
+  --gd-interface-extent: 133.3334%;
+
+  display: grid;
+  grid-template-columns: var(--gd-rail-w) 1fr;
+  grid-template-rows: var(--gd-topbar-h) 1fr;
+  grid-template-areas:
+    'topbar topbar'
+    'rail   map';
+  height: var(--gd-interface-extent);
+  width: var(--gd-interface-extent);
+  overflow: hidden;
+  transform: scale(var(--gd-interface-scale));
+  transform-origin: top left;
+  /* The frame colour, not the card colour. The map is rounded at its inner
+     corner, and what shows through that corner is this — white in light mode,
+     where it is invisible, graphite in Dark and #001DF3 in Dark blue, where it
+     joins the top bar and the rail into one continuous L around the map. */
+  background: var(--gd-frame);
+  color: var(--gd-ink);
+}
+
+.app-shell[data-scale='0.9'] {
+  --gd-interface-scale: 0.9;
+  --gd-interface-extent: 111.1112%;
+}
+
+.app-shell[data-scale='1'] {
+  --gd-interface-scale: 1;
+  --gd-interface-extent: 100%;
+}
+
+.app-shell[data-scale='1.1'] {
+  --gd-interface-scale: 1.1;
+  --gd-interface-extent: 90.9091%;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────────
+   Full width, 96 tall. Logo sits 28px in, the right-hand controls stop 24px
+   from the edge. Contents are TopBar.css's business. */
+
+.app-topbar {
+  grid-area: topbar;
+  position: relative;
+  z-index: var(--gd-z-chrome);
+  display: flex;
+  align-items: center;
+  gap: var(--gd-gap);
+  padding: 0 var(--gd-map-inset) 0 28px;
+  background: var(--gd-surface);
+  min-width: 0;
+}
+
+/* ── Left rail ───────────────────────────────────────────────────────────
+   80 wide, buttons centred on the 48px column. Primary nav pinned to the
+   top, utility nav to the bottom — both 24px from their edge, which is what
+   `space-between` plus this padding gives. */
+
+.app-rail {
+  grid-area: rail;
+  position: relative;
+  z-index: var(--gd-z-chrome);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--gd-map-inset) 0;
+  background: var(--gd-surface);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+/* ── Map area ────────────────────────────────────────────────────────────
+   Starts where the rail and the top bar end, rounded at that inner corner.
+   `isolation` keeps the overlays' z-indexes from competing with the top bar
+   and rail: everything inside stacks against the map, not the page. */
+
+.app-map {
+  grid-area: map;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+  border-top-left-radius: var(--gd-radius-card);
+  background: var(--gd-map-bg);
+
+  /* The details panel is 400 wide, but never wider than the map minus its
+     two insets — so a narrow window shrinks the panel instead of pushing
+     the "Hide" button off-screen. Overlays read this, not --gd-panel-w. */
+  --gd-panel-actual: min(var(--gd-panel-w), calc(100% - (var(--gd-map-inset) * 2)));
+}
+
+/* Requesting fullscreen on the map container drops the inner corner. */
+.app-map:fullscreen {
+  border-top-left-radius: 0;
+}
+
+/* ── Overlay positioning helpers ─────────────────────────────────────────
+   Everything that floats over the map is inset 24px from the map area's own
+   edges. Each helper is an absolutely positioned box, so the gaps between
+   them stay live for panning and dot clicks. */
+
+.map-overlay {
+  position: absolute;
+  z-index: var(--gd-z-overlay);
+  max-width: calc(100% - (var(--gd-map-inset) * 2));
+  max-height: calc(100% - (var(--gd-map-inset) * 2));
+}
+
+.map-overlay--tl {
+  top: var(--gd-map-inset);
+  left: var(--gd-map-inset);
+}
+
+.map-overlay--tr {
+  top: var(--gd-map-inset);
+  right: var(--gd-map-inset);
+}
+
+.map-overlay--bl {
+  bottom: var(--gd-map-inset);
+  left: var(--gd-map-inset);
+}
+
+.map-overlay--br {
+  bottom: var(--gd-map-inset);
+  right: var(--gd-map-inset);
+}
+
+/* The device details viewport: top-left, 400 wide, scrolls inside itself
+   when the four cards outgrow the window. */
+.map-overlay--panel {
+  top: var(--gd-map-inset);
+  left: var(--gd-map-inset);
+  width: var(--gd-panel-actual);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+/* Immediately right of the panel (Figma x=448 = 24 + 400 + 24) — the "Hide"
+   button. It tracks the panel's real width, so it follows on a narrow window;
+   the second term is a floor that stops it being squeezed off the map edge
+   entirely, at the cost of overlapping the panel on a very small window. */
+.map-overlay--aside {
+  top: var(--gd-map-inset);
+  left: min(
+    calc(var(--gd-map-inset) + var(--gd-panel-actual) + var(--gd-map-inset)),
+    calc(100% - var(--gd-map-inset) - var(--gd-control-h))
+  );
+}
+
+/* When the panel is hidden, the same button returns to the top-left corner. */
+.map-overlay--aside.is-collapsed {
+  left: var(--gd-map-inset);
+}
+
+/* ── Leaflet, restyled for the light console ─────────────────────────────
+   DisasterMap.jsx renders <div class="map-canvas"> and builds its markers as
+   divIcons using the class names below. Selectors are doubled up where they
+   have to beat leaflet.css, which loads first. */
+
+/* The global reset in index.css sets `max-width: 100%` on img/svg/canvas.
+   Leaflet's panes are absolutely positioned with no width, so inside them
+   `100%` resolves to 0 and the canvas renderer collapses — every device dot
+   and zone ring silently disappears while the tiles keep drawing. Leaflet
+   sizes these elements itself in pixels, so opt them out of the reset. */
+.leaflet-container img,
+.leaflet-container canvas,
+.leaflet-pane img,
+.leaflet-pane canvas,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-image-layer {
+  max-width: none;
+  max-height: none;
+}
+
+.map-canvas,
+.app-map .leaflet-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--gd-map-bg);
+  font-family: var(--gd-font);
+  font-size: var(--gd-fs-xs);
+  line-height: var(--gd-lh-xs);
+  color: var(--gd-ink-3);
+  outline: none;
+}
+
+/* Leaflet paints its own focus ring on the container on every click. */
+.leaflet-container:focus,
+.leaflet-container:focus-visible {
+  outline: none;
+}
+
+.leaflet-container a {
+  color: var(--gd-ink-2);
+}
+
+/* Zoom control — the design's control language: white, 10px, soft shadow,
+   no hard 2px border. */
+.app-map .leaflet-bar {
+  border: 0;
+  border-radius: var(--gd-radius-control);
+  box-shadow: var(--gd-shadow-card);
+  overflow: hidden;
+}
+
+.app-map .leaflet-bar a,
+.app-map .leaflet-bar a:hover {
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  border: 0;
+  border-bottom: 1px solid var(--gd-hairline);
+  background: var(--gd-surface);
+  color: var(--gd-ink-2);
+  font-weight: var(--gd-fw-medium);
+  transition: background var(--gd-dur-fast) var(--gd-ease);
+}
+
+.app-map .leaflet-bar a:last-child {
+  border-bottom: 0;
+}
+
+.app-map .leaflet-bar a:hover {
+  background: var(--gd-field);
+}
+
+.app-map .leaflet-bar a.leaflet-disabled {
+  background: var(--gd-field);
+  color: var(--gd-ink-4);
+}
+
+/* The Solid location menu owns the bottom-right corner. Lift Leaflet's zoom
+   and scale stack above it while keeping the same 24px right alignment. */
+.app-map .leaflet-bottom.leaflet-right {
+  right: calc(var(--gd-map-inset) - 10px);
+  bottom: calc(var(--gd-map-inset) + var(--gd-control-h) + 2px);
+}
+
+/* Attribution and scale — present and readable, but never loud. */
+.app-map .leaflet-control-attribution {
+  padding: 2px 8px;
+  border-radius: var(--gd-radius-pill);
+  background: var(--gd-map-chip);
+  color: var(--gd-ink-4);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.app-map .leaflet-control-scale-line {
+  border: 1px solid var(--gd-hairline-strong);
+  border-top: 0;
+  padding: 1px 6px;
+  border-radius: 0 0 4px 4px;
+  background: var(--gd-map-chip);
+  color: var(--gd-ink-3);
+  font-size: 11px;
+  line-height: 16px;
+  text-shadow: none;
+}
+
+/* ── Device tooltip ──────────────────────────────────────────────────────
+   Leaflet's default is a white box with a 1px white border, a dark drop
+   shadow and a CSS-triangle arrow. All three go; what is left matches the
+   cards: white, 10px, DM Sans, the card shadow. */
+
+.leaflet-tooltip.device-tip {
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--gd-radius-control);
+  background: var(--gd-surface);
+  color: var(--gd-ink);
+  font-family: var(--gd-font);
+  font-size: 13px;
+  font-weight: var(--gd-fw-medium);
+  line-height: 16px;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  box-shadow: var(--gd-shadow-card);
+}
+
+/* The arrow is a ::before on the tooltip itself, one rule per direction. */
+.leaflet-tooltip.device-tip::before,
+.leaflet-tooltip.device-tip::after {
+  display: none;
+  content: none;
+  border: 0;
+}
+
+/* ── Epicentre ───────────────────────────────────────────────────────────
+   divIcon html: <div class="epicentre"><span class="epicentre-pulse"></span></div>
+   A solid red core in a white collar, with a ring breathing outwards. The
+   ring is not the only cue — the map also draws the labelled zone bands. */
+
+.epicentre {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.epicentre::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--gd-red);
+  box-shadow:
+    0 0 0 3px var(--gd-marker-halo),
+    0 1px 4px rgba(23, 33, 43, 0.35);
+}
+
+.epicentre-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid var(--gd-red);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: gd-epicentre-pulse 2400ms var(--gd-ease) infinite;
+}
+
+@keyframes gd-epicentre-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(3.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(3.6);
+    opacity: 0;
+  }
+}
+
+/* ── Operator pin ────────────────────────────────────────────────────────
+   "You are here" after Set Location resolves. Ink, not a zone colour: the
+   operator is not a casualty and must not read as one. */
+
+.operator-pin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--gd-ink);
+  box-shadow:
+    0 0 0 3px var(--gd-surface),
+    0 0 0 5px rgba(23, 33, 43, 0.18),
+    0 2px 6px rgba(23, 33, 43, 0.35);
+}
+
+/* ── Shell placement for the chrome components ───────────────────────────
+   TopBar and NavRail already carry their full Figma geometry — the 96px bar
+   with its 28/24px insets, the 80px rail with its 16px inset and its
+   top/bottom anchoring. They are placed straight into the grid rather than
+   wrapped in .app-topbar / .app-rail, which would double every one of those
+   paddings. The two rules below are placement only. */
+
+.app-shell > .gd-topbar {
+  grid-area: topbar;
+  z-index: var(--gd-z-chrome);
+}
+
+.app-shell > .navrail {
+  grid-area: rail;
+  z-index: var(--gd-z-chrome);
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+/* ── Left overlay stack ──────────────────────────────────────────────────
+   DeviceDetails and the ops panels each render their own 400px card stack
+   with the 84x44 "Hide" button beside it, so both live in one overlay box
+   rather than in the separate --panel / --aside pair. The stack scrolls
+   inside itself; the Hide button stays pinned at the top next to it. */
+
+.map-overlay--stack {
+  top: var(--gd-map-inset);
+  left: var(--gd-map-inset);
+  display: flex;
+  align-items: flex-start;
+
+  /* Explicit width, deliberately not a percentage.
+     The stack used to size itself from its content while its child asked for
+     `min(400px, 100% - 48px)` — a percentage resolved against a parent whose
+     width depended on that same child. The circular case resolved to 354px, so
+     the Hide button squeezed the cards ~46px narrower than the 400 the design
+     calls for, and the label/value columns lost their alignment with it.
+     400 (panel) + 24 (gap) + 84 (Hide) = 508. */
+  width: min(508px, calc(100% - (var(--gd-map-inset) * 2)));
+  /* A definite height lets the child stack resolve 100% correctly at every
+     interface scale. The former 100vh child cap ignored the shell's inverse
+     canvas expansion at 75%, which made the last card look sliced off. */
+  height: calc(100% - (var(--gd-map-inset) * 2));
+  max-height: calc(100% - (var(--gd-map-inset) * 2));
+}
+
+.map-overlay--stack .dd,
+.map-overlay--stack .ops {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+}
+
+/* The cards keep their 400px and scroll inside themselves. The max-height comes
+   from the overlay, not from 100vh: at 110% browser zoom the viewport unit and
+   the map's real height diverge enough that the last card sat below the fold
+   with nothing to scroll. */
+.map-overlay--stack .dd__stack,
+.map-overlay--stack .ops__stack {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+
+  /* The overlay now has a definite height, so this follows the map's real
+     remaining space instead of a viewport value that drifts under app scale. */
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding-block: 0 var(--gd-gap);
+}
+
+.map-overlay--stack .dd__stack::-webkit-scrollbar,
+.map-overlay--stack .ops__stack::-webkit-scrollbar {
+  width: 6px;
+}
+
+.map-overlay--stack .dd__stack::-webkit-scrollbar-thumb,
+.map-overlay--stack .ops__stack::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--gd-hairline-strong);
+}
+
+.map-overlay--stack .dd__stack::-webkit-scrollbar-track,
+.map-overlay--stack .ops__stack::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Cards keep their natural height. As flex children in a column they were
+   shrinking to fit the available space instead of overflowing it, so the stack
+   always reported "fits" — scrolling never engaged and the last card's rows
+   were quietly squashed and clipped. */
+.map-overlay--stack .dd__stack > *,
+.map-overlay--stack .ops__stack > * {
+  flex: 0 0 auto;
+}
+
+/* The Hide button must not shrink or scroll away with the cards. */
+.map-overlay--stack .dd-hide {
+  flex: 0 0 auto;
+}
+
+.dd-hide {
+  transition: background 140ms ease, color 140ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-overlay--stack .dd__stack,
+  .map-overlay--stack .ops__stack,
+  .map-overlay--stack .dd-card,
+  .map-overlay--stack .ops-card {
+    animation: none;
+  }
+}
+
+/* ── Shelter marker ──────────────────────────────────────────────────────
+   divIcon html: <div class="shelter-pin"><svg …house…/></div>. A shelter is
+   not a casualty and must not read as a zone: a square ink tile with a house,
+   separable from every round device dot at a glance and without colour. */
+
+.shelter-pin {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--gd-ink);
+  color: var(--gd-surface);
+  box-shadow:
+    0 0 0 2px var(--gd-marker-halo),
+    0 2px 6px rgba(23, 33, 43, 0.35);
+  cursor: pointer;
+}
+
+.shelter-pin svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Stream state strip ──────────────────────────────────────────────────
+   Bottom-left of the map. Present whenever the console is anything other
+   than plainly live on the supervisor — including a healthy demo, which
+   still has to say that it is a demo. */
+
+.app-strip {
+  box-sizing: border-box;
+  width: min(420px, calc(100% - (var(--gd-map-inset) * 2)));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: var(--gd-radius-card);
+  background: var(--gd-surface);
+  box-shadow: var(--gd-shadow-card);
+}
+
+.app-strip__title {
+  margin: 0;
+  font-size: var(--gd-fs-base);
+  font-weight: var(--gd-fw-bold);
+  line-height: var(--gd-lh-base);
+  color: var(--gd-ink);
+}
+
+.app-strip__body {
+  margin: 0;
+  font-size: var(--gd-fs-sm);
+  line-height: 20px;
+  color: var(--gd-ink-3);
+}
+
+.app-strip__detail {
+  margin: 0;
+  font-size: var(--gd-fs-xs);
+  line-height: var(--gd-lh-xs);
+  color: var(--gd-ink-4);
+  word-break: break-word;
+}
+
+.app-strip__actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.app-strip__btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--gd-radius-control);
+  background: var(--gd-field);
+  font-size: var(--gd-fs-sm);
+  font-weight: var(--gd-fw-medium);
+  line-height: 20px;
+  color: var(--gd-ink-2);
+  transition: background var(--gd-dur-fast) var(--gd-ease);
+}
+
+.app-strip__btn:hover {
+  background: var(--gd-field-hover);
+}
+
+/* ── Transient note ──────────────────────────────────────────────────────
+   The one place the console admits what it cannot do: no auth service, a
+   refused fullscreen, a declined location. Top-centre of the map, clears
+   itself after a few seconds. */
+
+.app-note {
+  top: var(--gd-map-inset);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--gd-z-toast);
+  margin: 0;
+  max-width: min(520px, calc(100% - (var(--gd-map-inset) * 2)));
+  padding: 12px 16px;
+  border-radius: var(--gd-radius-control);
+  background: var(--gd-ink);
+  color: var(--gd-surface);
+  font-size: var(--gd-fs-sm);
+  font-weight: var(--gd-fw-medium);
+  line-height: 20px;
+  box-shadow: var(--gd-shadow-pop);
+}
+
+/* ── Fatal banner ────────────────────────────────────────────────────────
+   Outside the map, so it survives every rail view and the hidden panel. */
+
+/* ── Halted pipeline ────────────────────────────────────────────────────────
+   Reports the SUPERVISOR's health, never the socket's. It carries its own
+   recovery buttons because a banner that states a problem and offers nothing
+   is a banner the operator learns to ignore. */
+
+.app-fatal {
+  position: fixed;
+  left: 50%;
+  bottom: var(--gd-map-inset);
+  transform: translateX(-50%);
+  z-index: var(--gd-z-toast);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  max-width: min(760px, calc(100vw - 48px));
+  padding: 12px 14px 12px 18px;
+  border-radius: var(--gd-radius-control);
+  background: var(--gd-red);
+  color: #ffffff;
+  box-shadow: var(--gd-shadow-pop);
+}
+
+.app-fatal__text {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--gd-fs-sm);
+  font-weight: var(--gd-fw-regular);
+  line-height: 19px;
+}
+
+.app-fatal__text strong {
+  font-weight: var(--gd-fw-bold);
+}
+
+.app-fatal__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.app-fatal__btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: var(--gd-fs-sm);
+  font-weight: var(--gd-fw-medium);
+  line-height: 20px;
+  white-space: nowrap;
+  transition: background-color var(--gd-dur-fast) var(--gd-ease);
+}
+
+.app-fatal__btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.app-fatal__btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* ── Foreign frames ─────────────────────────────────────────────────────────
+   Frames belonging to another incident were dropped rather than merged. Not an
+   error — a fact about what is NOT on screen. Quieter than the fatal banner
+   and stacked above it. */
+
+.app-foreign {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--gd-map-inset) + 64px);
+  transform: translateX(-50%);
+  z-index: var(--gd-z-toast);
+  margin: 0;
+  max-width: min(680px, calc(100vw - 48px));
+  padding: 10px 16px;
+  border-radius: var(--gd-radius-control);
+  background: var(--gd-surface);
+  color: var(--gd-ink-2);
+  font-size: var(--gd-fs-xs);
+  line-height: 17px;
+  box-shadow: var(--gd-shadow-pop);
+}
+
+/* ── Simulation ────────────────────────────────────────────────────────────
+   Present for as long as a browser simulation is on the board. The demo amber
+   the toolbar chip also wears, never a live colour, and a way back. */
+
+.app-sim {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--gd-map-inset) + 96px);
+  transform: translateX(-50%);
+  z-index: var(--gd-z-toast);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: min(680px, calc(100vw - 48px));
+  padding: 10px 12px 10px 16px;
+  border-radius: var(--gd-radius-control);
+  background: var(--gd-demo-fill);
+  box-shadow: inset 0 0 0 1px rgba(255, 165, 31, 0.55), var(--gd-shadow-pop);
+  color: var(--gd-ink-2);
+}
+
+.app-sim__text {
+  margin: 0;
+  font-size: var(--gd-fs-xs);
+  line-height: 17px;
+}
+
+.app-sim__text strong {
+  color: var(--gd-ink);
+  font-weight: var(--gd-fw-bold);
+}
+
+.app-sim__btn {
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: var(--gd-ink);
+  color: var(--gd-surface);
+  font-size: var(--gd-fs-sm);
+  font-weight: var(--gd-fw-medium);
+  white-space: nowrap;
+}
+
+.app-sim__btn:hover {
+  opacity: 0.88;
+}
+
+.app-sim__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+/* Replay sits beside Stop, a step quieter: it keeps the simulation going. */
+.app-sim__btn--quiet {
+  background: var(--gd-surface);
+  color: var(--gd-ink);
+  box-shadow: inset 0 0 0 1px rgba(255, 165, 31, 0.55);
+}
+
+.app-sim__btn:focus-visible {
+  outline: 2px solid var(--gd-ink);
+  outline-offset: 2px;
+}
+
+/* ── Map popups: a clicked point, a shelter ──────────────────────────────
+   Leaflet's popup chrome, restyled to the console's cards. Coordinates are
+   tabular so they read and copy as one block. */
+
+.gd-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  background: var(--gd-surface);
+  color: var(--gd-ink);
+  box-shadow: var(--gd-shadow-pop);
+}
+
+.gd-popup .leaflet-popup-tip {
+  background: var(--gd-surface);
+}
+
+.gd-popup .leaflet-popup-content {
+  margin: 14px 16px;
+  font-family: var(--gd-font);
+}
+
+.gd-popup a.leaflet-popup-close-button {
+  top: 6px;
+  right: 6px;
+  color: var(--gd-ink-4);
+}
+
+.pt-pop {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+}
+
+.pt-pop__title {
+  margin: 0 18px 2px 0;
+  font-size: var(--gd-fs-sm);
+  font-weight: var(--gd-fw-bold);
+  line-height: 20px;
+}
+
+.pt-pop__line {
+  margin: 0;
+  font-size: var(--gd-fs-xs);
+  line-height: 16px;
+  color: var(--gd-ink-3);
+}
+
+.pt-pop__coords {
+  margin: 4px 0 0;
+  user-select: all;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+}
+
+.pt-pop__dms {
+  margin: 0;
+  font-size: var(--gd-fs-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 16px;
+  color: var(--gd-ink-4);
+}
+
+.pt-pop__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pt-pop__btn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--gd-field);
+  color: var(--gd-ink-2);
+  font-size: var(--gd-fs-xs);
+  font-weight: var(--gd-fw-medium);
+  white-space: nowrap;
+  transition: background var(--gd-dur-fast) var(--gd-ease);
+}
+
+.pt-pop__btn:hover {
+  background: var(--gd-field-hover);
+}
+
+.pt-pop__btn--primary {
+  background: var(--gd-ink);
+  color: var(--gd-surface);
+}
+
+.pt-pop__btn--primary:hover {
+  background: var(--gd-ink);
+  opacity: 0.88;
+}
+
+.pt-pop__btn:disabled {
+  opacity: 0.7;
+}
+
+/* A shelter's name rides beside its marker, not behind a hover: there are at
+   most three, and where they are is the point of the layer. */
+.leaflet-tooltip.shelter-label {
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--gd-surface);
+  color: var(--gd-ink);
+  font-family: var(--gd-font);
+  font-size: 12px;
+  font-weight: var(--gd-fw-medium);
+  line-height: 16px;
+  box-shadow: 0 1px 4px rgba(23, 33, 43, 0.25);
+}
+
+.leaflet-tooltip.shelter-label::before {
+  display: none;
+}
+
+/* ── Completed incident ────────────────────────────────────────────────────
+   A lifecycle result from event_complete. This never describes the socket or
+   claims that an upstream provider is live. */
+
+.app-complete {
+  position: fixed;
+  right: var(--gd-map-inset);
+  bottom: var(--gd-map-inset);
+  z-index: var(--gd-z-toast);
+  margin: 0;
+  max-width: min(560px, calc(100vw - 48px));
+  padding: 10px 16px;
+  border: 1px solid var(--gd-line);
+  border-radius: var(--gd-radius-control);
+  background: var(--gd-surface);
+  color: var(--gd-ink-2);
+  font-size: var(--gd-fs-xs);
+  line-height: 17px;
+  box-shadow: var(--gd-shadow-pop);
+}
+
+/* ── Overlay hit-testing ────────────────────────────────────────────────────
+   The overlay boxes are transparent, but they are still elements: the details
+   wrapper stretches well past its 400px cards and was swallowing every click,
+   drag and wheel event over that slice of the map. The map underneath then
+   never saw them — zone clicks did nothing, and panning or zooming was dead
+   wherever an overlay happened to reach, including the empty space left when
+   the panel was collapsed to its "Show" button.
+
+   So the containers opt out of hit-testing entirely and only the real controls
+   opt back in. Anything genuinely clickable added to an overlay must be listed
+   here, or it will look enabled and do nothing. */
+
+.map-overlay,
+.map-overlay--stack,
+.map-overlay .dd,
+.map-overlay .ops {
+  pointer-events: none;
+}
+
+.map-overlay .dd__stack,
+.map-overlay .ops__stack,
+.map-overlay .dd-hide,
+.map-overlay .map-toolbar,
+.map-overlay.gd-map-location,
+.app-note {
+  pointer-events: auto;
+}
+
+/* ── The map ground's tint ─────────────────────────────────────────────────
+   The VECTOR dark canvas is recoloured in its style (lib/mapStyle.js) — no
+   filter, nothing re-applied per frame. This rule is for the RASTER fallback
+   only: when the vector engine cannot run, Dark blue turns Esri's dark grey
+   canvas navy with a filter; every other theme sets --gd-ground-tint to none.
+   On the tile and label panes only — the device dots, zone rings and markers
+   live in other panes, so a red dot stays exactly the red of the red zone.
+   And only on the grey canvas: satellite imagery and the street map exist to
+   show what is really on the ground, and a tint would falsify exactly that. */
+
+.leaflet-container[data-basemap='dark'][data-renderer='raster'] .leaflet-tile-pane,
+.leaflet-container[data-basemap='dark'][data-renderer='raster'] .leaflet-shadow-pane {
+  filter: var(--gd-ground-tint);
+}
+
+/* The MapLibre layer's container. maplibre-gl.css makes every GL map
+   position: relative, which inside a Leaflet pane puts a second GL layer (the
+   brief overlap while one ground replaces another) BELOW the first in normal
+   flow instead of on top of it. Leaflet positions it by transform; pin its
+   origin to the pane's. */
+.leaflet-pane > .leaflet-gl-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
