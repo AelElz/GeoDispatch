@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────
+# GLOBAL ENVIRONMENT & SERVER CONFIGURATION
+# ─────────────────────────────────────────────────────────────
+GEODISPATCH_ENV=development
+SERVER_PORT=8080
+DASHBOARD_PORT=3000
+SUPERVISOR_WS_URL=ws://localhost:8080/ws
+
+# ─────────────────────────────────────────────────────────────
+# AI AGENT
+# ─────────────────────────────────────────────────────────────
+# Use http://mock_agent:5000/decide for dev mode (make up-dev)
+# Use http://python-agent:8000/decide for production mode (make up)
+AGENT_URL=http://geodispatch-app:8000/decide
+AGENT_PORT=8000
+
+# ─────────────────────────────────────────────────────────────
+# NOKIA NETWORK AS CODE — CAMARA (Real API)
+# ─────────────────────────────────────────────────────────────
+NOKIA_NAC_BASE_URL=https://network-as-code.p-eu.apihub.nokia.io
+MOCK_NOKIA_NAC_BASE_URL=http://mock_camara:8081
+
+NOKIA_NAC_HOST=network-as-code.nokia.rapidapi.com
+
+# leave empty for testing
+NOKIA_NAC_API_KEY=
+
+CAMARA_LOCATION_MAX_AGE_SEC=600
+CAMARA_CONCURRENCY=50
+
+# ─────────────────────────────────────────────────────────────
+# DATABASE
+# ─────────────────────────────────────────────────────────────
+# Must match the user/password configured in docker-compose.yml
+DATABASE_URL=postgres://geodispatch:geodispatch@postgres:5432/geodispatch?sslmode=disable
+
+# ─────────────────────────────────────────────────────────────
+# SMS GATEWAY (Africa's Talking)
+# ─────────────────────────────────────────────────────────────
+AFRICASTALKING_API_KEY=atsk_1f3038ef5fecc818d1d30ad98f8212e5d307186625cdabbe5e6e356bbfa4db0ae76307c9
+AFRICASTALKING_USERNAME=sandbox
+
+# ─────────────────────────────────────────────────────────────
+# LOCAL SERVICES
+# ─────────────────────────────────────────────────────────────
+OLLAMA_URL=http://geodispatch-ollama:11434
