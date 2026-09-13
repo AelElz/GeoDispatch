@@ -4,15 +4,106 @@ networks:
   default:
     name: geodispatch-net
 
-include:
-  - agent/docker-compose.yml
-  - supervisor/docker-compose.dev.yml
-
 services:
+
+  # ── Ollama (LLM runtime) ──────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:0.32.15
+    container_name: geodispatch-ollama
+    environment:
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_HOST: "0.0.0.0:11434"
+    expose:
+      - "11434"
+    volumes:
+      - ollama-models:/root/.ollama
+      - ../agent/modelfiles:/modelfiles:ro
+      - ../agent/docker/init-models.sh:/usr/local/bin/init-models.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/init-models.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 && test -f /tmp/geodispatch-models-ready"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 3h
+    restart: unless-stopped
+
+  # ── Python Agent (AI decision engine) ─────────────────────────────────────
+  app:
+    build:
+      context: ../agent
+      dockerfile: Dockerfile
+    container_name: geodispatch-app
+    environment:
+      OLLAMA_HOST: "http://ollama:11434"
+      GEODISPATCH_OLLAMA_CONNECT_TIMEOUT: "5"
+      GEODISPATCH_OLLAMA_READ_TIMEOUT: "240"
+      GEODISPATCH_OLLAMA_MAX_INFLIGHT: "1"
+    ports:
+      - "8000:8000"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Postgres + PostGIS ────────────────────────────────────────────────────
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: geodispatch_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       geodispatch
+      POSTGRES_USER:     geodispatch
+      POSTGRES_PASSWORD: geodispatch
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ../supervisor/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+      - ../supervisor/migrations/002_events.sql:/docker-entrypoint-initdb.d/002_events.sql:ro
+      - ../supervisor/scripts/seed/seed_shelters.sql:/docker-entrypoint-initdb.d/003_seed_shelters.sql:ro
+      - ../supervisor/scripts/seed/seed_devices.sql:/docker-entrypoint-initdb.d/004_seed_devices.sql:ro
+      - ../supervisor/scripts/seed/seed_demo_areas.sql:/docker-entrypoint-initdb.d/005_seed_demo_areas.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geodispatch -d geodispatch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ── Go Supervisor ─────────────────────────────────────────────────────────
+  supervisor:
+    build:
+      context: ../supervisor
+      dockerfile: Dockerfile
+    container_name: geodispatch_supervisor_dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mock_camara:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://geodispatch:geodispatch@postgres:5432/geodispatch?sslmode=disable
+      MOCK_NOKIA_NAC_BASE_URL: http://mock_camara:8081
+      AGENT_URL: http://app:8000/decide
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/livez || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ── Dashboard (SolidJS + Leaflet) ─────────────────────────────────────────
   dashboard:
     build:
-      context: .
-      dockerfile: docker/dashboard.Dockerfile
+      context: ..
+      dockerfile: deploy/docker/dashboard.Dockerfile
       args:
         VITE_WS_URL: ${DASHBOARD_WS_URL:-ws://localhost:3000/ws}
     container_name: geodispatch_dashboard
@@ -23,11 +114,10 @@ services:
     ports:
       - "${DASHBOARD_PORT:-3000}:80"
 
-  # Local CAMARA fallback for development and demo reliability. This reuses
-  # the supervisor-owned mock; it does not duplicate its implementation.
+  # ── Mock CAMARA ───────────────────────────────────────────────────────────
   mock_camara:
     build:
-      context: ./supervisor
+      context: ../supervisor
       dockerfile: scripts/camara/Dockerfile
     container_name: geodispatch_mock_camara
     restart: unless-stopped
@@ -39,3 +129,8 @@ services:
       timeout: 3s
       retries: 5
       start_period: 3s
+
+volumes:
+  ollama-models:
+    name: geodispatch-ollama-models
+  postgres_dev_data:

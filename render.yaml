@@ -1,0 +1,105 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# GeoDispatch — Render.com Blueprint
+#
+# Deploys the full stack:
+#   • Dashboard      (static site — SolidJS + Leaflet)
+#   • Supervisor      (web service — Go, public HTTP + WebSocket)
+#   • Mock Agent      (private service — Go, rule-based triage)
+#   • Mock CAMARA     (private service — Go, Nokia NaC simulator)
+#   • PostgreSQL      (managed database)
+#
+# Usage:
+#   1. Push this repo to GitHub
+#   2. Go to https://dashboard.render.com → Blueprints → New Blueprint Instance
+#   3. Connect your repo — Render auto-detects this render.yaml
+#   4. Click "Apply" and wait for all services to deploy
+# ─────────────────────────────────────────────────────────────────────────────
+
+databases:
+  - name: geodispatch-db
+    plan: free
+    databaseName: geodispatch
+    user: geodispatch
+
+envVarGroups:
+  - name: geodispatch-shared
+    envVars:
+      - key: GEODISPATCH_ENV
+        value: production
+
+services:
+
+  # ── Dashboard (Static Site) ───────────────────────────────────────────────
+  - type: web
+    name: geodispatch-dashboard
+    runtime: static
+    rootDir: dashboard/interface
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_WS_URL
+        value: wss://geodispatch-supervisor.onrender.com/ws
+      - fromGroup: geodispatch-shared
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+
+  # ── Go Supervisor (Web Service — public) ──────────────────────────────────
+  - type: web
+    name: geodispatch-supervisor
+    runtime: docker
+    rootDir: supervisor
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /livez
+    envVars:
+      - fromGroup: geodispatch-shared
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geodispatch-db
+          property: connectionString
+      - key: AGENT_URL
+        fromService:
+          name: geodispatch-mock-agent
+          type: pserv
+          envVarKey: RENDER_AGENT_URL
+      - key: MOCK_NOKIA_NAC_BASE_URL
+        fromService:
+          name: geodispatch-mock-camara
+          type: pserv
+          envVarKey: RENDER_CAMARA_URL
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: SERVER_PORT
+        value: "8080"
+
+  # ── Mock Agent (Private Service) ──────────────────────────────────────────
+  - type: pserv
+    name: geodispatch-mock-agent
+    runtime: docker
+    rootDir: supervisor
+    dockerfilePath: ./scripts/agent/Dockerfile
+    plan: free
+    envVars:
+      - key: MOCK_AGENT_DELAY_MS
+        value: "400"
+      - key: RENDER_AGENT_URL
+        value: http://geodispatch-mock-agent:8082/decide
+
+  # ── Mock CAMARA (Private Service) ─────────────────────────────────────────
+  - type: pserv
+    name: geodispatch-mock-camara
+    runtime: docker
+    rootDir: supervisor
+    dockerfilePath: ./scripts/camara/Dockerfile
+    plan: free
+    envVars:
+      - key: MOCK_CAMARA_LATENCY_MS
+        value: "300"
+      - key: RENDER_CAMARA_URL
+        value: http://geodispatch-mock-camara:8081
