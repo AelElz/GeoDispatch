@@ -1,0 +1,12 @@
+node_modules/
+interface/node_modules/
+interface/dist/
+dist/
+.solid/
+.env
+.vscode/
+.idea/
+*.log
+logs/
+.DS_Store
+.claude/

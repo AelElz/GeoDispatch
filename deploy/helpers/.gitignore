@@ -1,0 +1,16 @@
+# Ignore all files and directories in helpers by default
+/*
+/.*
+
+# Do not ignore .gitignore itself
+!.gitignore
+
+# Allow the operations manual
+!/menu.md
+!/manu*
+
+# Allow the scripts directory
+!/scripts/
+
+# Ignore internal AGY assistant tracking directory
+/scripts/agy/

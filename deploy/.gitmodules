@@ -1,0 +1,12 @@
+[submodule "agent"]
+	path = agent
+	url = https://github.com/geoDispatch/agent.git
+[submodule "dashboard"]
+	path = dashboard
+	url = https://github.com/geoDispatch/dashboard.git
+[submodule "contracts"]
+	path = contracts
+	url = https://github.com/geoDispatch/contracts.git
+[submodule "supervisor"]
+	path = supervisor
+	url = https://github.com/geoDispatch/supervisor.git

@@ -1,0 +1,358 @@
+/* Device details viewport — Figma 77:3 / 77:2.
+   Plain CSS. Tokens come from src/styles/tokens.css; the fallbacks repeat the
+   token values verbatim so the panel still renders correctly on its own. */
+
+.dd {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  font-family: var(--gd-font);
+}
+
+.dd__stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gd-gap, 16px);
+  width: 400px;
+  flex: 0 0 400px;
+}
+
+/* --- card ---------------------------------------------------------------- */
+
+.dd-card {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gd-gap, 16px);
+  padding: var(--gd-card-pad, 24px);
+  background: var(--gd-surface, #ffffff);
+  border-radius: var(--gd-radius-card, 16px);
+  overflow: hidden;
+}
+
+.dd-card__heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 32px;
+}
+
+.dd-card__title {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+  color: var(--gd-ink, #17212b);
+  word-break: break-word;
+}
+
+/* Heading icons are inline SVGs on a shared 24x24 grid, so one rule sizes all
+   four — no per-icon nudges. `color` is what the glyph draws with, because the
+   markup is inlined (?raw + innerHTML) rather than loaded through <img>. */
+.dd-card__icon {
+  display: flex;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  color: var(--gd-ink, #17212b);
+}
+
+.dd-card__icon svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+/* --- collapse button ----------------------------------------------------- */
+
+.dd-card__collapse {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.dd-card__collapse:hover {
+  background: var(--gd-field, #f6f7f9);
+}
+
+.dd-card__collapse:focus-visible {
+  outline: 2px solid var(--gd-ink, #17212b);
+  outline-offset: 2px;
+}
+
+/* The minus-in-a-box is the only glyph the set ships. The plus affordance is
+   the same real vector drawn twice, the second copy rotated a quarter turn —
+   nothing here is hand-drawn. */
+.dd-card__glyph {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.dd-card__glyph-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.dd-card__glyph-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* Swapped instantly, never faded: whether a card is collapsed is state the
+   operator reads at a glance, not decoration. */
+.dd-card__glyph-cross {
+  opacity: 0;
+  transform: rotate(90deg);
+}
+
+.dd-card__glyph.is-plus .dd-card__glyph-cross {
+  opacity: 1;
+}
+
+/* --- card body ----------------------------------------------------------- */
+
+.dd-card__body {
+  width: 100%;
+}
+
+/* Device identity — masked phone + assigned zone */
+
+.dd-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.dd-identity__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.dd-identity__icon {
+  display: flex;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: var(--gd-ink-2, #47525e);
+}
+
+.dd-identity__icon svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.dd-identity__phone {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--gd-ink, #17212b);
+  word-break: break-word;
+}
+
+/* Colour is set inline from ZONE_COLORS; the zone WORD is always present, so
+   the zone is never encoded by colour alone. */
+.dd-identity__zone {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  word-break: break-word;
+}
+
+/* The AI-escalation note under the zone word, aligned with the text rather
+   than the icon (20px icon + 12px gap). Type and colour come from
+   .dd-row__note. */
+.dd-identity__note {
+  margin: -4px 0 0 32px;
+}
+
+/* --- detail rows --------------------------------------------------------- */
+
+.dd-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.dd-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gd-gap, 16px);
+  width: 100%;
+}
+
+.dd-row__label {
+  flex: 0 0 124px;
+  width: 124px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: var(--gd-ink-3, #525e6b);
+  word-break: break-word;
+}
+
+.dd-row__value-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.dd-row__value {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--gd-ink, #17212b);
+  word-break: break-word;
+}
+
+/* A field the supervisor never sends: the em-dash reads as absence, not data. */
+.dd-row__value.is-missing {
+  color: var(--gd-ink-3, #525e6b);
+}
+
+.dd-row__note {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: var(--gd-ink-3, #525e6b);
+  opacity: 0.75;
+}
+
+/* --- empty state --------------------------------------------------------- */
+
+/* Holds the same height as the rows it replaces, so picking a device does not
+   shift the stack. */
+.dd-empty {
+  display: flex;
+  align-items: center;
+  min-height: var(--dd-empty-h, 56px);
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: var(--gd-ink-3, #525e6b);
+  word-break: break-word;
+}
+
+/* --- hide / show control — Figma 77:2 ------------------------------------ */
+
+.dd-hide {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 84px;
+  height: var(--gd-control-h, 44px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--gd-radius-control, 10px);
+  background: var(--gd-surface, #ffffff);
+  color: var(--gd-ink-2, #47525e);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.dd-hide:hover {
+  background: var(--gd-field, #f6f7f9);
+}
+
+.dd-hide:focus-visible {
+  outline: 2px solid var(--gd-ink, #17212b);
+  outline-offset: 2px;
+}
+
+.dd-hide__label {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--gd-ink-2, #47525e);
+  white-space: nowrap;
+}
+
+/* A left chevron on the 24x24 grid, drawn at 16px. Hiding folds the panel to
+   the left, so the glyph points left as authored — no rotation. */
+.dd-hide__chevron {
+  display: flex;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.dd-hide__chevron svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* Restoring points the other way. */
+.dd-hide--show .dd-hide__chevron svg {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dd-card__collapse,
+  .dd-hide {
+    transition: none;
+  }
+}
+
+/* ── Zone narrative ─────────────────────────────────────────────────────────
+   The AI situation report runs to ~500 characters, which is eight lines, not
+   two. It scrolls inside the card rather than pushing the stack off-screen. */
+.dd-narrative {
+  margin: 0;
+  max-height: 168px;
+  overflow-y: auto;
+  font-size: var(--gd-fs-sm, 16px);
+  font-weight: 400;
+  line-height: 24px;
+  color: var(--gd-ink-3);
+  overscroll-behavior: contain;
+}
+
+.dd-narrative::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dd-narrative::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgba(23, 33, 43, 0.16);
+}

@@ -1,0 +1,131 @@
+/* Left navigation rail — Figma 65:2 (Primary navigation) + 68:2 (Utility navigation).
+ *
+ * Geometry from Frame 18: an 80px white column running the full height below
+ * the 96px top bar, with a 16px horizontal inset so the 48px tiles sit centred.
+ * Primary nav is top-anchored 24px below the top bar on a 60px pitch
+ * (48px tile + 12px gap); utility nav is bottom-anchored on a 56px pitch
+ * (44px tile + 12px gap). `space-between` plus the symmetric 24px block
+ * padding produces both anchors without any magic offsets. */
+
+.navrail {
+  /* Local tokens, fed from the frame tokens so the rail follows the theme:
+     white with grey glyphs in Light, graphite in Dark, #001DF3 in Dark blue.
+     The icons are stroked with currentColor, so these are the single source of
+     truth for the glyph colour as well as the tile. */
+  --nav-idle-ink: var(--gd-frame-ink-3);
+  --nav-active-bg: var(--gd-frame-select);
+  --nav-active-ink: var(--gd-frame-select-ink);
+
+  box-sizing: border-box;
+  flex: 0 0 var(--gd-rail-w, 80px);
+  width: var(--gd-rail-w, 80px);
+  height: 100%;
+  align-self: stretch;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 16px;
+
+  background: var(--gd-frame);
+  font-family: var(--gd-font);
+}
+
+.navrail__nav {
+  display: block;
+}
+
+.navrail__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.navrail__item {
+  display: block;
+}
+
+/* --- buttons ------------------------------------------------------------ */
+
+.navrail__btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  /* The inlined SVG strokes with currentColor, so `color` here IS the glyph
+     colour. Transitioned alongside the tile so both states change together. */
+  color: var(--nav-idle-ink, #5e6b75);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.navrail__btn--primary {
+  height: 48px;
+}
+
+.navrail__btn--utility {
+  height: 44px;
+}
+
+.navrail__btn:hover {
+  background: var(--gd-frame-field);
+  color: var(--gd-frame-ink);
+}
+
+.navrail__btn:active {
+  background: var(--gd-frame-field-hover);
+}
+
+/* Frame ink, not the active tile's ink: in dark mode that ink IS the rail's
+   blue, and a focus ring the colour of the thing it sits on is no ring. */
+.navrail__btn:focus-visible {
+  outline: 2px solid var(--gd-frame-ink);
+  outline-offset: 2px;
+}
+
+/* Selected treatment from the frame: the tinted tile behind the glyph. The
+   glyph recolours with it — `color` cascades into the inlined SVG, which is
+   why the *-active.svg duplicates no longer exist. */
+.navrail__btn--active,
+.navrail__btn--active:hover,
+.navrail__btn--active:active {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-ink);
+}
+
+/* --- icon --------------------------------------------------------------- */
+
+/* A fixed 24px slot holding the inlined <svg>. Every glyph is drawn on the
+   same 24px grid at stroke 1.75, so no per-icon size correction is needed and
+   both dimensions are set explicitly (never `auto`). */
+.navrail__icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+.navrail__icon > svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+  max-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navrail__btn {
+    transition: none;
+  }
+}

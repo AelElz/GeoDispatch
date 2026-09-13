@@ -1,0 +1,41 @@
+name: geodispatch
+
+networks:
+  default:
+    name: geodispatch-net
+
+include:
+  - agent/docker-compose.yml
+  - supervisor/docker-compose.dev.yml
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard.Dockerfile
+      args:
+        VITE_WS_URL: ${DASHBOARD_WS_URL:-ws://localhost:3000/ws}
+    container_name: geodispatch_dashboard
+    restart: unless-stopped
+    depends_on:
+      supervisor:
+        condition: service_healthy
+    ports:
+      - "${DASHBOARD_PORT:-3000}:80"
+
+  # Local CAMARA fallback for development and demo reliability. This reuses
+  # the supervisor-owned mock; it does not duplicate its implementation.
+  mock_camara:
+    build:
+      context: ./supervisor
+      dockerfile: scripts/camara/Dockerfile
+    container_name: geodispatch_mock_camara
+    restart: unless-stopped
+    ports:
+      - "${MOCK_CAMARA_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/qos || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s

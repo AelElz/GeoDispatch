@@ -1,0 +1,25 @@
+# Environment files (never commit secrets)
+.env
+
+# Dependencies & Build artifacts
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
+*.pyo
+
+# System files
+.DS_Store
+Thumbs.db
+.agents
+
+#helpers files
+
+# codex-logChanges.md
+# INTEGRATION_ACTIONS.md
+# issuesProgress.md
+# requirements-contract.txt
+# WORKING_STATUS.md
+# TESTING_PLAN.md
+# CHANGELOG.md
